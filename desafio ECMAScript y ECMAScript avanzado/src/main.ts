@@ -1,4 +1,6 @@
 
+const fs = require("fs");
+
 interface product{
     id?:number;
     title:string;
@@ -13,80 +15,140 @@ interface product{
 class ProductManager{
 
     Products: product[];
+    path : string;
 
-    constructor(products: product[]){
-        this.Products = products
+    constructor(products: product[], path: string){
+        this.Products = products;
+        this.path = path;
+    }
+
+    MakeDB(){
+
+        if(fs.existsSync(this.path)){
+            this.Products = JSON.parse(fs.readFileSync(this.path, 'utf8'));
+        }
+
     }
 
     AddProduct(productos:product){
 
-        console.log("inicio: " + JSON.stringify(this.Products))
+        console.log("length products: " +  this.Products.length)
 
-        if(this.Products.length === 0){
-            productos.id = 1;
-            this.Products.push(productos); 
+        productos.id = this.Products.length;
 
-        }else if(this.Products.length !== 0){
+        this.MakeDB();
 
-            for(let product of this.Products){
+        const VerifyCode = this.Products.some(element => element.code === productos.code);
 
-                productos.id = this.Products.length;
+        if(VerifyCode !== true){
 
-            if(productos.code === product.code){
-                console.log("el codigo del nuevo producto es igual a otro codigo");
-                break;
-            }else{
-                console.log(productos.id);
-                this.Products.push(productos);
-            }
+            this.Products.push(productos);
+        
+            fs.writeFileSync(this.path, JSON.stringify(this.Products));
+
+            return 'producto agregado';
+        
+        }else{
+            return 'el producto tiene el mismo codigo que otro producto';
         }
-        }
-
-        console.log("final: " + JSON.stringify(this.Products))
 
     }
 
     GetProducts(){
-        console.log(this.Products);
+        let getProducts = fs.readFileSync(this.path, 'utf8');
+
+        return JSON.parse(getProducts);
+
     }
 
     getProductById(id:number){
 
-        for(let product of this.Products){
+        let findProduct = JSON.parse(fs.readFileSync(this.path, 'utf8'));
+
+        for(let product of findProduct){
 
             if(id === product.id){
                 console.log("result getProductById: " + JSON.stringify(product));
+                return product;
             }else{
                 console.log("error not found");
             }
         }
+    }
 
+    updateProducts(id:number, property:string, value:string | number){
+        let product = this.getProductById(id);
+
+        let keys = Object.keys(product);
+        let values = Object.values(product);
+
+        let newArray = [];
+
+        for (let index = 0; index < keys.length; index++) {
+            const element = keys[index];
+            
+            if(element === property){
+                values[index] = value;
+            }
+
+            newArray.push([element, values[index]]);
+        }
+
+        let newproduct = Object.fromEntries(newArray)
+
+        let oldArray = this.GetProducts();
+
+        for (let index = 0; index < oldArray.length; index++) {
+            const element = oldArray[index];
+
+            if(element.id === id){
+                oldArray.splice(index, 1, newproduct)
+            }
+            
+        }
+
+        fs.writeFileSync(this.path, JSON.stringify(oldArray));
+    }
+
+    deleteProducts(id:number){
+        
+        let oldArray = this.GetProducts();
+
+        for (let index = 0; index < oldArray.length; index++) {
+            const element = oldArray[index];
+
+            if (element.id === id){
+                 oldArray.splice(index, 1)
+            }
+
+        }
+
+        console.log(JSON.stringify(oldArray));
+
+        fs.unlinkSync(this.path);
+
+        fs.writeFileSync(this.path, JSON.stringify(oldArray));
+
+    }
+
+    deleteAllProducts(){
+
+        fs.unlinkSync(this.path)
     }
 
 }
 
 
-let camisas = new ProductManager([]);
 
-camisas.AddProduct({
-    title: "camisa",
-    description: "manga corta",
-    price: 250,
-    thumbnail: "url....",
-    code: "codigo cualquiera 1",
-    stock: 500
-});
 
-camisas.AddProduct({
-    title: "chomba",
-    description: "negras con flores",
-    price: 150,
-    thumbnail: "url....",
-    code: "codigo cualquiera 2",
-    stock: 200
-});
 
-camisas.AddProduct({
+let camisas = new ProductManager([] , "./ejemplo.txt");
+
+camisas.MakeDB();
+
+
+setTimeout(() => {
+    camisas.AddProduct({
     title: "remeras",
     description: "blancas lisas",
     price: 100,
@@ -94,11 +156,42 @@ camisas.AddProduct({
     code: "codigo cualquiera 1",
     stock: 800
 });
+}, 1000);
+
+setTimeout(() => {
+    camisas.AddProduct({
+    title: "chomba",
+    description: "negras con flores",
+    price: 150,
+    thumbnail: "url....",
+    code: "codigo cualquiera 2",
+    stock: 200
+});
+}, 1500);
+
+setTimeout(() => {
+    camisas.AddProduct({
+    title: "camisa",
+    description: "manga corta",
+    price: 250,
+    thumbnail: "url....",
+    code: "codigo cualquiera 1",
+    stock: 500
+});
+}, 2000);
+
+
+
 
 setTimeout(() => {
     camisas.GetProducts();
-}, 5000);
+}, 3000);
 
 setTimeout(() =>{
-    camisas.getProductById(1);
-}, 5000)
+    camisas.updateProducts(1, "price", 300);
+}, 4000)
+
+
+setTimeout(() => {
+    camisas.deleteProducts(2)
+}, 5000);
