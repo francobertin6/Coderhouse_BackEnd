@@ -1,121 +1,81 @@
-"use strict";
-const fs = require("fs");
+import express from "express";
+const products = express.Router();
+products.use(express.json());
 class ProductManager {
-    constructor(products, path) {
-        this.Products = products;
-        this.path = path;
+    constructor() {
+        this.Products = [];
+        this.id = 0;
     }
-    MakeDB() {
-        if (fs.existsSync(this.path)) {
-            this.Products = JSON.parse(fs.readFileSync(this.path, 'utf8'));
-        }
-    }
-    AddProduct(productos) {
-        console.log("length products: " + this.Products.length);
-        productos.id = this.Products.length;
-        this.MakeDB();
-        const VerifyCode = this.Products.some(element => element.code === productos.code);
-        if (VerifyCode !== true) {
-            this.Products.push(productos);
-            fs.writeFileSync(this.path, JSON.stringify(this.Products));
-            return 'producto agregado';
+    addProduct(producto) {
+        let checkCode = this.Products.some(element => producto.code === element.code);
+        if (checkCode) {
+            console.log("el codigo se ha repetido con otro producto");
         }
         else {
-            return 'el producto tiene el mismo codigo que otro producto';
+            producto.id = this.id;
+            this.Products.push(producto);
+            this.id++;
+            console.log("el producto " + JSON.stringify(producto) + " se ha agregado al array, ahora el id de la clase es " + this.id);
         }
     }
-    GetProducts() {
-        let getProducts = fs.readFileSync(this.path, 'utf8');
-        return JSON.parse(getProducts);
+    getAllProducts() {
+        return this.Products;
     }
-    getProductById(id) {
-        let findProduct = JSON.parse(fs.readFileSync(this.path, 'utf8'));
-        for (let product of findProduct) {
-            if (id === product.id) {
-                console.log("result getProductById: " + JSON.stringify(product));
-                return product;
+    getLimitedProducts(limit) {
+        if (this.Products.length < limit) {
+            return this.getAllProducts();
+        }
+        else {
+            let newArray = [];
+            for (let index = 0; index < limit; index++) {
+                const element = this.Products[index];
+                newArray.push(element);
             }
-            else {
-                console.log("error not found");
-            }
+            return newArray;
         }
     }
-    updateProducts(id, property, value) {
-        let product = this.getProductById(id);
-        let keys = Object.keys(product);
-        let values = Object.values(product);
-        let newArray = [];
-        for (let index = 0; index < keys.length; index++) {
-            const element = keys[index];
-            if (element === property) {
-                values[index] = value;
-            }
-            newArray.push([element, values[index]]);
+    getProduct(id) {
+        let find = this.Products.find(element => element.id === id);
+        if (find === undefined) {
+            console.log("el elemento no se encuentra");
         }
-        let newproduct = Object.fromEntries(newArray);
-        let oldArray = this.GetProducts();
-        for (let index = 0; index < oldArray.length; index++) {
-            const element = oldArray[index];
-            if (element.id === id) {
-                oldArray.splice(index, 1, newproduct);
-            }
+        else {
+            return find;
         }
-        fs.writeFileSync(this.path, JSON.stringify(oldArray));
     }
-    deleteProducts(id) {
-        let oldArray = this.GetProducts();
-        for (let index = 0; index < oldArray.length; index++) {
-            const element = oldArray[index];
-            if (element.id === id) {
-                oldArray.splice(index, 1);
-            }
-        }
-        console.log(JSON.stringify(oldArray));
-        fs.unlinkSync(this.path);
-        fs.writeFileSync(this.path, JSON.stringify(oldArray));
+    updateProduct(id, newProduct) {
+        let producto = this.Products.findIndex(element => element.id === id);
+        this.Products.splice(producto, 1, newProduct);
+    }
+    deleteProduct(id) {
+        let producto = this.Products.findIndex(element => element.id === id);
+        this.Products.splice(producto, 1);
     }
     deleteAllProducts() {
-        fs.unlinkSync(this.path);
+        this.Products = [];
     }
 }
-let camisas = new ProductManager([], "./ejemplo.txt");
-camisas.MakeDB();
-setTimeout(() => {
-    camisas.AddProduct({
-        title: "remeras",
-        description: "blancas lisas",
-        price: 100,
-        thumbnail: "url....",
-        code: "codigo cualquiera 1",
-        stock: 800
-    });
-}, 1000);
-setTimeout(() => {
-    camisas.AddProduct({
-        title: "chomba",
-        description: "negras con flores",
-        price: 150,
-        thumbnail: "url....",
-        code: "codigo cualquiera 2",
-        stock: 200
-    });
-}, 1500);
-setTimeout(() => {
-    camisas.AddProduct({
-        title: "camisa",
-        description: "manga corta",
-        price: 250,
-        thumbnail: "url....",
-        code: "codigo cualquiera 1",
-        stock: 500
-    });
-}, 2000);
-setTimeout(() => {
-    camisas.GetProducts();
-}, 3000);
-setTimeout(() => {
-    camisas.updateProducts(1, "price", 300);
-}, 4000);
-setTimeout(() => {
-    camisas.deleteProducts(2);
-}, 5000);
+const mercaderia = new ProductManager();
+products.post("/addProduct", (req, res) => {
+    if (!req.body.title || !req.body.description || !req.body.price || !req.body.thumbnail || !req.body.code || !req.body.stock) {
+        res.status(404).send("te faltan paramentros");
+    }
+    else {
+        res.status(200).send("el producto se agrego satisfactoriamente");
+        mercaderia.addProduct(req.body);
+    }
+});
+products.get("/", (req, res) => {
+    let limit = Number(req.query.limit);
+    let id = Number(req.query.id);
+    if (!limit && !id) {
+        res.status(200).send(mercaderia.getAllProducts());
+    }
+    else if (!limit && id) {
+        res.status(200).send(mercaderia.getProduct(id));
+    }
+    else {
+        res.status(200).send(mercaderia.getLimitedProducts(limit));
+    }
+});
+export default products;
