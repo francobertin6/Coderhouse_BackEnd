@@ -2,6 +2,7 @@ import express from "express";
 import * as fs from "fs";
 const cart = express.Router();
 cart.use(express.json());
+// carritoJson: verifica si existe el file carrito.json.txt
 const carritoJson = () => {
     let exists = fs.existsSync("./files/carrito.json.txt");
     if (exists === true) {
@@ -26,6 +27,7 @@ class CartManager {
         this.id = 0;
         this.productsIds = productsIds;
     }
+    // createCart: crea carritos nuevos con un id en particular para cada uno y un array vacio para que los clientes los llenen de productos 
     createCart() {
         let newCart = Object();
         newCart.id = this.id;
@@ -35,12 +37,11 @@ class CartManager {
         this.Carts.push(newCart);
         fs.writeFileSync("./files/carrito.json.txt", JSON.stringify(this.Carts));
     }
-    getProductsId() {
-        console.log(this.productsIds);
-    }
+    // postProductsId: se fija si existen productos creados y trae los id de ellos para ponerlos en productsIds
     postProductsId(numberArray) {
         this.productsIds = numberArray;
     }
+    // agregateProduct_to_cart: agrega en un carrito en especifico ( por su id ) un producto en especifico ( por su id )
     AgregateProduct_to_cart(cartId, productId) {
         let findCart = this.Carts.find(element => element.id === cartId);
         let findProduct = this.productsIds.find(element => element === productId);
@@ -69,6 +70,7 @@ class CartManager {
             console.log("o carrito no se ha creado o no existe un producto con ese id");
         }
     }
+    // getProducts_to_cart: devuelve los productos que se encuentren en un carrito en especifico
     getProducts_to_cart(cartId) {
         let findCart = this.Carts.find(element => element.id === cartId);
         if (findCart !== undefined) {
@@ -80,6 +82,8 @@ class CartManager {
         }
     }
 }
+/* ------------------------------------------------------------------------------------------------------------------------------- */
+// productsId: hace la funcion de devolver los ids de los productos para la funcion postProductsId
 const productsId = (products) => {
     if (products === undefined) {
         return [];

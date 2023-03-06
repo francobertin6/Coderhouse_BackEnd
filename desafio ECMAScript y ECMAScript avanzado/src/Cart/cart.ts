@@ -4,7 +4,7 @@ import * as fs from "fs";
 const cart = express.Router();
 cart.use(express.json());
 
-
+// carritoJson: verifica si existe el file carrito.json.txt
 const carritoJson : any = () => {
 
     let exists =  fs.existsSync("./files/carrito.json.txt")
@@ -48,6 +48,8 @@ class CartManager{
         this.productsIds = productsIds;
     }
 
+    // createCart: crea carritos nuevos con un id en particular para cada uno y un array vacio para que los clientes los llenen de productos 
+
     createCart(){
         let newCart = Object();
 
@@ -61,13 +63,14 @@ class CartManager{
         fs.writeFileSync("./files/carrito.json.txt", JSON.stringify(this.Carts));
     }
 
-    getProductsId(): any{
-        console.log(this.productsIds);
-    }
+    // postProductsId: se fija si existen productos creados y trae los id de ellos para ponerlos en productsIds
 
     postProductsId(numberArray: number[]){
         this.productsIds = numberArray;
     }
+
+
+    // agregateProduct_to_cart: agrega en un carrito en especifico ( por su id ) un producto en especifico ( por su id )
 
     AgregateProduct_to_cart(cartId:number, productId:number){
 
@@ -114,6 +117,9 @@ class CartManager{
 
     }
 
+
+    // getProducts_to_cart: devuelve los productos que se encuentren en un carrito en especifico
+
     getProducts_to_cart(cartId:number){
         let findCart = this.Carts.find(element => element.id === cartId);
 
@@ -129,6 +135,9 @@ class CartManager{
 
 }
 
+/* ------------------------------------------------------------------------------------------------------------------------------- */
+
+// productsId: hace la funcion de devolver los ids de los productos para la funcion postProductsId
 
 const productsId = (products:any) : any => {
 
